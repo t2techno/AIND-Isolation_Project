@@ -35,7 +35,12 @@ def custom_score(game, player):
         The heuristic value of the current game state to the specified player.
     """
     # Returns the difference of moves between opponent and I
-    return float(len(game.get_legal_moves(player=game._player_1)) - len(game.get_legal_moves(player=game._player_2)))
+    my_moves = float(len(game.get_legal_moves(player=game._player_1)))
+    op_moves = float(len(game.get_legal_moves(player=game._player_2)))
+    
+    out = (game.move_count/4)*my_moves - ((4/game.move_count)*(op_moves))
+    
+    return out
 
 
 def custom_score_2(game, player):
@@ -60,8 +65,12 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # Returns the same as above, but opponent moves weighted 2 
-    return float(len(game.get_legal_moves(player=game._player_1)) - 2*len(game.get_legal_moves(player=game._player_2)))
+    # Returns the same as above, but opponent moves weighted 2
+    my_moves = float(len(game.get_legal_moves(player=game._player_1)))
+    op_moves = float(len(game.get_legal_moves(player=game._player_2)))
+    
+    out = (4/game.move_count)*my_moves - ((game.move_count/4)*(op_moves))
+    return out
 
 
 
@@ -88,7 +97,12 @@ def custom_score_3(game, player):
         The heuristic value of the current game state to the specified player.
     """
     # This time the number of my moves is weighted 2
-    return float(2*len(game.get_legal_moves(player=game._player_1)) - len(game.get_legal_moves(player=game._player_2)))
+    my_moves = float(len(game.get_legal_moves(player=game._player_1)))
+    op_moves = float(len(game.get_legal_moves(player=game._player_2)))
+    
+    #out = my_moves/(my_moves+op_moves)
+    out = (my_moves+1)/(op_moves+1)
+    return out
 
 
 
@@ -273,12 +287,22 @@ class MinimaxPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
+            
+        legal_moves = game.get_legal_moves()
+        if len(legal_moves) == 0:
+            return game.utility(self)
+        
         # default to no valid moves
-        a = (-1,-1)
-        moves = {move: min_value(game.forecast_move(move),1) for move in game.get_legal_moves()}
-        a = max(moves, key=moves.get)
-
-        return a
+        best_move = (-1,-1)
+        best_score = float('-inf')
+        
+        for move in legal_moves:
+            new_score = min_value(game.forecast_move(move),1)
+            if new_score >= best_score:
+                best_move = move
+                best_score = new_score
+         
+        return best_move
 
 
 class AlphaBetaPlayer(IsolationPlayer):
@@ -402,19 +426,19 @@ class AlphaBetaPlayer(IsolationPlayer):
                 return self.score(game,game.active_player)
             
             
-            v = float('-inf')
-            for a in legal_moves:
+            best_score = float('-inf')
+            for move in legal_moves:
                 # Gets the max value of the children of current node, passing on alpha and beta
                 # Incrementing depth
-                v = max(v,min_value(game.forecast_move(a),current_depth+1,alpha,beta))
+                best_score = max(best_score,min_value(game.forecast_move(move),current_depth+1,alpha,beta))
                 
                 # If v is a new lower bound, apply as such
-                alpha = max(alpha,v)
+                alpha = max(alpha,best_score)
                 
                 # If v >= upper bound, no need to check more children
-                if v >= beta:
-                    return v
-            return v
+                if best_score >= beta:
+                    return best_score
+            return best_score
             
             
             
@@ -432,22 +456,21 @@ class AlphaBetaPlayer(IsolationPlayer):
             if current_depth >= depth:
                 return self.score(game,game.inactive_player)
             
-            v = float('inf')
-            for a in legal_moves:
+            best_score = float('inf')
+            for move in legal_moves:
                 # Gets the min value of the children of current node, passing on alpha and beta
                 # Incrementing depth
-                v = min(v,max_value(game.forecast_move(a),current_depth+1,alpha,beta))
+                best_score = min(best_score,max_value(game.forecast_move(move),current_depth+1,alpha,beta))
                 
                 # If v is a new upper bound, apply as such
-                beta = min(beta,v)
+                beta = min(beta,best_score)
                 
                 # If v <= lower bound, no need to check more children
-                if v <= alpha:
-                    return v
-            return v
+                if best_score <= alpha:
+                    return best_score
+            return best_score
             
         # TODO: finish this function!
-        
         # Base function
         
         # Timer Check
@@ -459,10 +482,19 @@ class AlphaBetaPlayer(IsolationPlayer):
             return game.utility(self)
 
         # default to no valid moves
-        a = (-1,-1)
-        v = max_value(game,1,alpha,beta)
+        best_move = (-1,-1)
+        best_score = float('-inf')
         for move in legal_moves:
-            if self.score(game.forecast_move(move),game.active_player) == v:
-                return move
+            new_score = min_value(game.forecast_move(move),1,alpha,beta)
+            if new_score >= best_score:
+                best_move = move
+                best_score = new_score
+                
+            # If best_score is a new lower bound, apply as such
+            alpha = max(alpha,best_score)
 
-        return a
+            # If best_score >= upper bound, no need to check more children
+            if best_score >= beta:
+                return best_move
+        
+        return best_move
