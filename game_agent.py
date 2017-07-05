@@ -34,10 +34,12 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # Returns the difference of moves between opponent and I
+    
     my_moves = float(len(game.get_legal_moves(player=game._player_1)))
     op_moves = float(len(game.get_legal_moves(player=game._player_2)))
     
+    # Returns difference in moves, however it weights minimizing opponent moves heavier
+    # for the first 4 turns, then weights my freedom of movement as the game gets longer 
     out = (game.move_count/4)*my_moves - ((4/game.move_count)*(op_moves))
     
     return out
@@ -69,6 +71,8 @@ def custom_score_2(game, player):
     my_moves = float(len(game.get_legal_moves(player=game._player_1)))
     op_moves = float(len(game.get_legal_moves(player=game._player_2)))
     
+    # Inverse of custom_score, it weights my freedom of movement heavier
+    # in the beginning of the game, then changes priority to minimizing opponent moves after 4 turns
     out = (4/game.move_count)*my_moves - ((game.move_count/4)*(op_moves))
     return out
 
@@ -96,11 +100,10 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # This time the number of my moves is weighted 2
     my_moves = float(len(game.get_legal_moves(player=game._player_1)))
     op_moves = float(len(game.get_legal_moves(player=game._player_2)))
     
-    #out = my_moves/(my_moves+op_moves)
+    #A simple, static ratio of my moves to opponent moves, for comparing to above heuristics
     out = (my_moves+1)/(op_moves+1)
     return out
 
